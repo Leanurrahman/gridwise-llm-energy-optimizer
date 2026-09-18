@@ -2,7 +2,7 @@
 
 An LLM-assisted energy optimization system developed for the **BUP CSE Fest 2026 Hackathon Preliminary Round**.
 
-The system receives a 24-hour campus energy scenario with natural-language operator instructions, interprets those instructions using an LLM, converts them into structured energy directives, validates them using deterministic guardrails, and generates a minimum-cost 24-hour energy schedule using mathematical optimization.
+GridWise receives a 24-hour campus energy scenario with natural-language operator instructions. The system uses an LLM to interpret operator notes, converts them into structured directives, validates them using deterministic guardrails, and generates a minimum-cost energy schedule using mathematical optimization.
 
 ---
 
@@ -29,25 +29,22 @@ Expected response:
 Optimization Endpoint
 POST /optimize-energy
 
-Accepts the official GridWise request schema containing:
+The endpoint accepts the official GridWise request schema containing:
 
 scenario_id
 operator_notes
 24-hour energy information
 battery configuration
 
-Returns:
+The response contains:
 
 directive interpretation
 optimized hourly schedule
 total grid usage
 total electricity cost
 peak grid usage
-summary
+plan summary
 System Architecture
-
-The complete pipeline:
-
 Input JSON
      |
      v
@@ -67,31 +64,14 @@ Final Schedule Replay Validation
      |
      v
 JSON Response
-
-## Docker Image
-
-The fallback Docker image is available through GitHub Container Registry (GHCR):
-ghcr.io/leanurrrahman/gridwise:latest
-
-Pull the image:
-
-```bash
-docker pull ghcr.io/leanurrrahman/gridwise:latest
-
-docker run -p 8000:8000 \
--e LLM_API_URL="YOUR_ENDPOINT" \
--e LLM_API_KEY="YOUR_KEY" \
--e LLM_MODEL="gemini-3.5-flash-lite" \
-ghcr.io/leanurrrahman/gridwise:latest
-
-Components
+System Components
 1. FastAPI API Layer
 
 Receives the 24-hour energy scenario and returns the final optimization result.
 
 2. LLM Directive Interpreter
 
-The LLM interprets every operator_notes item and converts natural-language instructions into structured directives.
+The LLM interprets each operator_notes item and converts natural-language instructions into structured directives.
 
 Supported directives:
 
@@ -134,29 +114,6 @@ battery limits
 directive compliance
 total cost calculation
 end-of-day battery neutrality
-API Endpoints
-Health Check
-Request
-GET /health
-Response
-{
-  "status": "ok"
-}
-Energy Optimization
-Request
-POST /optimize-energy
-
-Example input:
-
-{
-  "scenario_id": "TEST-001",
-  "operator_notes": [
-    "Do not charge the battery between 2 PM and 4 PM."
-  ]
-}
-
-The complete request follows the official GridWise schema.
-
 Validation Results
 
 The implementation was tested using the official public sample cases.
@@ -175,9 +132,6 @@ SAMPLE-10 PASS
 Result:
 
 Passed directive interpretation: 10/10
-
-The system successfully interprets the public directive cases and generates valid optimization outputs.
-
 Local Setup (Windows)
 Create Virtual Environment
 python --version
@@ -227,49 +181,46 @@ Run:
 
 python scripts/test_public_cases.py "PATH_TO_PUBLIC_SAMPLE_CASES.json"
 
-The testing script validates machine-checkable directive interpretation.
+The script validates machine-checkable directive interpretation.
 
-Equivalent optimal schedules are accepted; the hourly schedule does not need to match the reference output byte-by-byte.
+Equivalent optimal schedules are accepted; the hourly schedule does not need to match the reference output byte-for-byte.
 
-Docker Support
+Docker Image
 
-A Docker fallback image is supported.
+The fallback Docker image is available through GitHub Container Registry (GHCR):
 
-Build
-docker build -t gridwise .
-Run
+ghcr.io/leanurrrahman/gridwise:latest
+Pull Image
+docker pull ghcr.io/leanurrrahman/gridwise:latest
+Run Container
 docker run --rm -p 8000:8000 \
--e LLM_API_URL="YOUR_FULL_ENDPOINT" \
--e LLM_API_KEY="YOUR_API_KEY" \
--e LLM_MODEL="YOUR_MODEL" \
-gridwise
+-e LLM_API_URL="YOUR_ENDPOINT" \
+-e LLM_API_KEY="YOUR_KEY" \
+-e LLM_MODEL="gemini-3.5-flash-lite" \
+ghcr.io/leanurrrahman/gridwise:latest
 
 The container runs the API on:
 
 0.0.0.0:8000
-GitHub Actions / Docker Image
+GitHub Actions / Docker Workflow
 
-The workflow:
+Workflow file:
 
 .github/workflows/docker.yml
 
-automatically:
+The workflow:
 
-Builds the Docker image
-Starts the container
-Tests the /health endpoint
-Publishes the image to GitHub Container Registry
+builds the Docker image
+starts the container
+tests the /health endpoint
+publishes the image to GitHub Container Registry
 
-Expected image format:
+Docker image:
 
-ghcr.io/<github-username>/gridwise:latest
-
-This provides a reproducible Docker fallback without requiring Docker Desktop during development.
-
+ghcr.io/leanurrrahman/gridwise:latest
 Repository Structure
 gridwise_starter/
 
-│
 ├── app/
 │   ├── main.py
 │   ├── llm.py
@@ -289,50 +240,22 @@ gridwise_starter/
 ├── requirements.txt
 ├── README.md
 └── public_cases.json
-LLM Adapter
+LLM Configuration
 
-The current implementation uses an OpenAI-compatible chat-completions style endpoint.
-
-Expected response format:
-
-choices[0].message.content
-
-The LLM provider configuration is supplied through environment variables:
+The LLM provider configuration is controlled through environment variables:
 
 LLM_API_URL
 LLM_API_KEY
 LLM_MODEL
 
-The LLM layer is isolated inside:
+The LLM integration is isolated inside:
 
 app/llm.py
 
-so the provider can be replaced without changing the optimizer or API architecture.
+so the provider can be replaced without modifying the optimization pipeline.
 
 Security
 Never commit API keys, tokens, passwords, or .env files.
 Do not expose secrets in logs or API responses.
-Do not return raw provider errors containing sensitive information.
 Use only synthetic challenge data.
-Future Improvements
-
-Possible improvements:
-
-More advanced optimization strategies
-Additional LLM providers
-Better caching for repeated directives
-More extensive hidden-case simulation
-Improved deployment monitoring
 Project Status
-
-Current implementation:
-
-✅ FastAPI backend
-✅ Public API deployment
-✅ LLM-based directive interpretation
-✅ Deterministic validation
-✅ Mathematical optimization
-✅ Battery and energy constraint handling
-✅ Public sample validation (10/10)
-✅ Docker support
-✅ GitHub Actions workflow
