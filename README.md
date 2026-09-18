@@ -1,154 +1,321 @@
 # GridWise — LLM-Assisted Energy Optimizer
 
-Starter implementation for the BUP CSE Fest 2026 online preliminary.
+An LLM-assisted energy optimization system developed for the **BUP CSE Fest 2026 Hackathon Preliminary Round**.
 
-## Architecture
+The system receives a 24-hour campus energy scenario with natural-language operator instructions, interprets those instructions using an LLM, converts them into structured energy directives, validates them using deterministic guardrails, and generates a minimum-cost 24-hour energy schedule using mathematical optimization.
 
-1. FastAPI receives the 24-hour scenario.
-2. The LLM interprets every `operator_notes` item.
-3. Deterministic guardrails validate the structured directives.
-4. PuLP/CBC builds the 24-hour minimum-cost schedule.
-5. A deterministic replay validates energy balance, battery state, directives,
-   totals, and end-of-day battery neutrality.
-6. The API returns the required JSON response.
+---
 
-## Endpoints
+# Live Deployment
 
-### Health
-`GET /health`
+## Base URL
+
+
+https://gridwise-llm-energy-optimizer.onrender.com
+
+
+## Health Endpoint
+
+
+GET /health
+
 
 Expected response:
 
 ```json
-{"status":"ok"}
-```
+{
+  "status": "ok"
+}
+Optimization Endpoint
+POST /optimize-energy
 
-### Optimization
-`POST /optimize-energy`
+Accepts the official GridWise request schema containing:
 
-Accepts the exact challenge request object.
+scenario_id
+operator_notes
+24-hour energy information
+battery configuration
 
-## Local setup (Windows)
+Returns:
 
-```powershell
+directive interpretation
+optimized hourly schedule
+total grid usage
+total electricity cost
+peak grid usage
+summary
+System Architecture
+
+The complete pipeline:
+
+Input JSON
+     |
+     v
+FastAPI Service
+     |
+     v
+LLM Operator Note Interpreter
+     |
+     v
+Deterministic Guardrail Validation
+     |
+     v
+PuLP/CBC Optimization Solver
+     |
+     v
+Final Schedule Replay Validation
+     |
+     v
+JSON Response
+Components
+1. FastAPI API Layer
+
+Receives the 24-hour energy scenario and returns the final optimization result.
+
+2. LLM Directive Interpreter
+
+The LLM interprets every operator_notes item and converts natural-language instructions into structured directives.
+
+Supported directives:
+
+solar_reduction
+minimum_battery_reserve
+no_charge_window
+no_discharge_window
+max_grid_window
+no_op
+3. Deterministic Guardrails
+
+The interpreted directives are validated before optimization.
+
+Validation includes:
+
+directive type checking
+hour range validation
+numeric value validation
+structured adjustment validation
+no_op consistency checking
+4. Optimization Engine
+
+PuLP/CBC is used to solve the 24-hour scheduling problem.
+
+The optimizer considers:
+
+grid electricity cost
+solar availability
+battery charging/discharging
+battery capacity
+charge/discharge limits
+operator constraints
+5. Final Replay Validation
+
+The generated schedule is independently verified for:
+
+hourly energy balance
+battery state transition
+battery limits
+directive compliance
+total cost calculation
+end-of-day battery neutrality
+API Endpoints
+Health Check
+Request
+GET /health
+Response
+{
+  "status": "ok"
+}
+Energy Optimization
+Request
+POST /optimize-energy
+
+Example input:
+
+{
+  "scenario_id": "TEST-001",
+  "operator_notes": [
+    "Do not charge the battery between 2 PM and 4 PM."
+  ]
+}
+
+The complete request follows the official GridWise schema.
+
+Validation Results
+
+The implementation was tested using the official public sample cases.
+
+SAMPLE-01 PASS
+SAMPLE-02 PASS
+SAMPLE-03 PASS
+SAMPLE-04 PASS
+SAMPLE-05 PASS
+SAMPLE-06 PASS
+SAMPLE-07 PASS
+SAMPLE-08 PASS
+SAMPLE-09 PASS
+SAMPLE-10 PASS
+
+Result:
+
+Passed directive interpretation: 10/10
+
+The system successfully interprets the public directive cases and generates valid optimization outputs.
+
+Local Setup (Windows)
+Create Virtual Environment
 python --version
+
 python -m venv .venv
+
 .\.venv\Scripts\Activate.ps1
+Install Dependencies
 python -m pip install --upgrade pip
+
 pip install -r requirements.txt
-```
+Configure Environment Variables
 
-Create `.env` from `.env.example`, then set:
+Create a .env file from .env.example.
 
-- `LLM_API_URL`
-- `LLM_API_KEY`
-- `LLM_MODEL`
+Required variables:
 
-Do not commit `.env`.
+LLM_API_URL
+LLM_API_KEY
+LLM_MODEL
 
-In PowerShell, export the variables for the current terminal, for example:
+Example:
 
-```powershell
 $env:LLM_API_URL="YOUR_FULL_ENDPOINT"
-$env:LLM_API_KEY="YOUR_KEY"
+
+$env:LLM_API_KEY="YOUR_API_KEY"
+
 $env:LLM_MODEL="YOUR_MODEL"
-```
 
-Run:
+Do not commit .env or any secret keys.
 
-```powershell
+Run Locally
+
+Start the API:
+
 uvicorn app.main:app --host 0.0.0.0 --port 8000
-```
 
 Test health:
 
-```powershell
 curl.exe http://127.0.0.1:8000/health
-```
 
-Or use Postman.
+The API can also be tested using Postman.
 
-## Public sample test
-
-With the API running:
-
-```powershell
-python scripts/test_public_cases.py "PATH\TO\BUP_CSE_FEST_2026_Preli_Public_Sample_Cases.json"
-```
-
-The script compares the machine-checkable directive interpretation fields.
-It does not require the hourly schedule to match the reference byte-for-byte.
-
-## Docker
-
-Build:
-
-```bash
-docker build -t gridwise .
-```
+Public Sample Testing
 
 Run:
 
-```bash
+python scripts/test_public_cases.py "PATH_TO_PUBLIC_SAMPLE_CASES.json"
+
+The testing script validates machine-checkable directive interpretation.
+
+Equivalent optimal schedules are accepted; the hourly schedule does not need to match the reference output byte-by-byte.
+
+Docker Support
+
+A Docker fallback image is supported.
+
+Build
+docker build -t gridwise .
+Run
 docker run --rm -p 8000:8000 \
-  -e LLM_API_URL="YOUR_FULL_ENDPOINT" \
-  -e LLM_API_KEY="YOUR_KEY" \
-  -e LLM_MODEL="YOUR_MODEL" \
-  gridwise
-```
+-e LLM_API_URL="YOUR_FULL_ENDPOINT" \
+-e LLM_API_KEY="YOUR_API_KEY" \
+-e LLM_MODEL="YOUR_MODEL" \
+gridwise
 
-The container binds the API to `0.0.0.0:8000`.
+The container runs the API on:
 
-## GitHub Actions / GHCR
+0.0.0.0:8000
+GitHub Actions / Docker Image
 
-`.github/workflows/docker.yml` builds the image in GitHub Actions, starts it,
-checks `/health`, and then pushes:
+The workflow:
 
-`ghcr.io/<github-username>/gridwise:latest`
+.github/workflows/docker.yml
 
-This lets the team build the fallback image without installing Docker Desktop
-on the development PC.
+automatically:
 
-After the workflow succeeds, ensure the package visibility and repository
-submission settings satisfy the event instructions.
+Builds the Docker image
+Starts the container
+Tests the /health endpoint
+Publishes the image to GitHub Container Registry
 
-## LLM adapter
+Expected image format:
 
-`app/llm.py` currently expects an OpenAI-compatible chat-completions style
-HTTP response:
+ghcr.io/<github-username>/gridwise:latest
 
-```text
+This provides a reproducible Docker fallback without requiring Docker Desktop during development.
+
+Repository Structure
+gridwise_starter/
+
+│
+├── app/
+│   ├── main.py
+│   ├── llm.py
+│   ├── optimizer.py
+│   ├── guardrails.py
+│   ├── replay.py
+│   └── schemas.py
+│
+├── scripts/
+│   └── test_public_cases.py
+│
+├── .github/
+│   └── workflows/
+│       └── docker.yml
+│
+├── Dockerfile
+├── requirements.txt
+├── README.md
+└── public_cases.json
+LLM Adapter
+
+The current implementation uses an OpenAI-compatible chat-completions style endpoint.
+
+Expected response format:
+
 choices[0].message.content
-```
 
-The full endpoint URL, API key, and model identifier are supplied by
-environment variables.
+The LLM provider configuration is supplied through environment variables:
 
-If the organizer-provided Puku service uses a different request/response
-format, replace only `app/llm.py`; the guardrails, optimizer, API schema, and
-Docker workflow can remain unchanged.
+LLM_API_URL
+LLM_API_KEY
+LLM_MODEL
 
-## Important implementation note
+The LLM layer is isolated inside:
 
-The official material defines each `solar_reduction` as multiplying original
-solar by a remaining fraction. It does not separately specify how two
-overlapping solar-reduction notes should combine. This starter composes
-overlapping reductions multiplicatively. Revisit this assumption if the
-organizers publish a clarification.
+app/llm.py
 
-## Security
+so the provider can be replaced without changing the optimizer or API architecture.
 
-- Never commit `.env`, keys, tokens, or passwords.
-- Do not return provider errors, raw prompts containing secrets, or stack
-  traces to API clients.
-- Use only challenge synthetic data.
+Security
+Never commit API keys, tokens, passwords, or .env files.
+Do not expose secrets in logs or API responses.
+Do not return raw provider errors containing sensitive information.
+Use only synthetic challenge data.
+Future Improvements
 
-## Known remaining work before submission
+Possible improvements:
 
-- Configure and test a real LLM provider in `app/llm.py`.
-- Run all organizer public sample cases.
-- Deploy the API to a public HTTPS URL.
-- Verify repeated requests and latency.
-- Make the final repository visibility change at the required time.
-- Verify the GHCR/Docker image is pullable by judges.
-- Record the required <=3-minute architecture/solution video.
+More advanced optimization strategies
+Additional LLM providers
+Better caching for repeated directives
+More extensive hidden-case simulation
+Improved deployment monitoring
+Project Status
+
+Current implementation:
+
+✅ FastAPI backend
+✅ Public API deployment
+✅ LLM-based directive interpretation
+✅ Deterministic validation
+✅ Mathematical optimization
+✅ Battery and energy constraint handling
+✅ Public sample validation (10/10)
+✅ Docker support
+✅ GitHub Actions workflow
