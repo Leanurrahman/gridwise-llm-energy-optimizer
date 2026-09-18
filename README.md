@@ -16,8 +16,7 @@ https://gridwise-llm-energy-optimizer.onrender.com
 
 ## Health Endpoint
 
-
-GET /health
+GET https://gridwise-llm-energy-optimizer.onrender.com/health
 
 
 Expected response:
