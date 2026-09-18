@@ -67,6 +67,23 @@ Final Schedule Replay Validation
      |
      v
 JSON Response
+
+## Docker Image
+
+The fallback Docker image is available through GitHub Container Registry (GHCR):
+ghcr.io/leanurrrahman/gridwise:latest
+
+Pull the image:
+
+```bash
+docker pull ghcr.io/leanurrrahman/gridwise:latest
+
+docker run -p 8000:8000 \
+-e LLM_API_URL="YOUR_ENDPOINT" \
+-e LLM_API_KEY="YOUR_KEY" \
+-e LLM_MODEL="gemini-3.5-flash-lite" \
+ghcr.io/leanurrrahman/gridwise:latest
+
 Components
 1. FastAPI API Layer
 
